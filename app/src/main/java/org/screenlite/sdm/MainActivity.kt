@@ -21,7 +21,6 @@ class MainActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 devicePolicyManager.setStatusBarDisabled(adminComponent, true)
             }
-
             devicePolicyManager.setLockTaskPackages(
                 adminComponent,
                 arrayOf("org.screenlite.webkiosk")
@@ -29,7 +28,6 @@ class MainActivity : ComponentActivity() {
         }
 
         val updater = AutoUpdater(this)
-
         lifecycleScope.launch {
             updater.updateIfNeeded()
         }
