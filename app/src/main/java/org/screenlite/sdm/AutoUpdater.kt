@@ -253,19 +253,23 @@ class AutoUpdater(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             val adminComponent = ComponentName(context, ScreenliteDeviceAdminReceiver::class.java)
-            dpm.setPermissionGrantState(
-                adminComponent, kioskPackage,
-                Manifest.permission.SYSTEM_ALERT_WINDOW,
-                DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
                 dpm.setPermissionGrantState(
                     adminComponent, kioskPackage,
-                    Manifest.permission.POST_NOTIFICATIONS,
+                    Manifest.permission.SYSTEM_ALERT_WINDOW,
                     DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
                 )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    dpm.setPermissionGrantState(
+                        adminComponent, kioskPackage,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                        DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED
+                    )
+                }
+                Log.i(TAG, "Permissions granted")
+            } catch (e: SecurityException) {
+                Log.w(TAG, "Not device owner — skipping permission grant: ${e.message}")
             }
-            Log.i(TAG, "Permissions granted")
         } else {
             Log.w(TAG, "Skipping permission grant — unsupported Android version")
         }

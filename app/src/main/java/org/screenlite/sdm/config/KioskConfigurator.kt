@@ -15,7 +15,7 @@ class KioskConfigurator(private val context: Context) {
                 Context.CONTEXT_IGNORE_SECURITY
             )
             val prefs = kioskContext.getSharedPreferences(
-                "kiosk_prefs",
+                "kiosk_settings",
                 Context.MODE_PRIVATE
             )
             prefs.edit().putString("start_url", serverUrl).apply()
@@ -34,7 +34,7 @@ class KioskConfigurator(private val context: Context) {
                 Context.CONTEXT_IGNORE_SECURITY
             )
             val prefs = kioskContext.getSharedPreferences(
-                "kiosk_prefs",
+                "kiosk_settings",
                 Context.MODE_PRIVATE
             )
             prefs.edit().putString("screen_name", screenName).apply()
