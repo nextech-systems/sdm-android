@@ -57,8 +57,14 @@ class ScreenliteDeviceAdminReceiver : DeviceAdminReceiver() {
             }
             extras.getString("screen_id")?.let {
                 putString("screen_id", it)
+                Log.i(TAG, "Saved screen ID: $it")
             }
-            apply()
+            extras.getString("player_token")?.let {
+                putString("player_token", it)
+                Log.i(TAG, "Saved player token")
+            }
+            putBoolean("setup_complete", true)
+            commit() // synchronous — ensures data survives an immediate reboot
         }
     }
 }

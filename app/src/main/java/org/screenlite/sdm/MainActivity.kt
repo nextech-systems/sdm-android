@@ -50,16 +50,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun applyConfig() {
-        // --- Source 1: USB provisioning SharedPreferences ---
         val prefs = getSharedPreferences("screenlite_provisioning", Context.MODE_PRIVATE)
         val provServerUrl = prefs.getString("screenlite_server_url", null)
         val provScreenName = prefs.getString("screen_name", null)
+        val provToken = prefs.getString("player_token", null)
         val provScreenId = prefs.getString("screen_id", null)
 
-        // --- Source 2: MDM managed config (RestrictionsManager) ---
         val managedConfig = ManagedConfig(this)
 
-        // --- Resolve with priority: USB provisioning > MDM > default ---
         val serverUrl = if (!provServerUrl.isNullOrBlank()) {
             Log.i(TAG, "Using server URL from USB provisioning: $provServerUrl")
             provServerUrl
@@ -85,16 +83,32 @@ class MainActivity : ComponentActivity() {
 
         Log.i(TAG, "Resolved config — serverUrl=$serverUrl, screenName=$screenName, screenId=$screenId")
 
-        // --- Build player URL ---
         val playerUrl = if (screenId.isNotBlank()) {
-            "${serverUrl.trimEnd('/')}/player/$screenId"
+            val base = "${serverUrl.trimEnd('/')}/player/$screenId"
+            if (!provToken.isNullOrBlank()) "$base?token=$provToken" else base
         } else {
             serverUrl
         }
 
-        // --- Push to webkiosk via KioskConfigurator ---
-        val configurator = KioskConfigurator(this)
+        Log.i(TAG, "Player URL: $playerUrl")
 
+        // Launch web-kiosk with the URL embedded directly in the intent
+        // This works even if web-kiosk is not already running
+        val launchIntent = packageManager.getLaunchIntentForPackage("org.screenlite.webkiosk")
+        if (launchIntent != null) {
+            launchIntent.apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra("start_url", playerUrl)
+                if (screenName.isNotBlank()) putExtra("screen_name", screenName)
+            }
+            startActivity(launchIntent)
+            Log.i(TAG, "Launched web-kiosk with player URL: $playerUrl")
+        } else {
+            Log.e(TAG, "web-kiosk not installed or not launchable")
+        }
+
+        // Also send the broadcast in case web-kiosk was already running
+        val configurator = KioskConfigurator(this)
         val urlPushed = configurator.pushServerUrl(playerUrl)
         Log.i(TAG, "pushServerUrl($playerUrl) = $urlPushed")
 
