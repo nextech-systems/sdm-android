@@ -22,7 +22,8 @@ class WatchdogService : Service() {
         private const val TAG = "WatchdogService"
         private const val CHANNEL_ID = "sdm_watchdog_channel"
         private const val NOTIFICATION_ID = 42
-        private const val CHECK_INTERVAL_MS = 15_000L
+        private const val CHECK_INTERVAL_MS = 30_000L
+        private const val LAUNCH_COOLDOWN_MS = 90_000L  // don't re-check for 90s after a launch
         private const val KIOSK_PACKAGE = "org.screenlite.webkiosk"
         private const val KIOSK_ACTIVITY = "org.screenlite.webkiosk.MainActivity"
 
@@ -37,6 +38,7 @@ class WatchdogService : Service() {
     }
 
     private val handler = Handler(Looper.getMainLooper())
+    private var lastLaunchTimeMs: Long = 0L
 
     private val checkTask = object : Runnable {
         override fun run() {
@@ -64,8 +66,13 @@ class WatchdogService : Service() {
         START_STICKY // restart the watchdog itself if it's killed
 
     private fun checkAndRestartKiosk() {
+        val now = System.currentTimeMillis()
+        if (now - lastLaunchTimeMs < LAUNCH_COOLDOWN_MS) {
+            Log.d(TAG, "Skipping check — within cooldown window after last launch")
+            return
+        }
         if (!isKioskRunning()) {
-            Log.w(TAG, "web-kiosk process not found — restarting")
+            Log.w(TAG, "web-kiosk not detected in foreground — restarting")
             launchKiosk()
         }
     }
@@ -111,6 +118,7 @@ class WatchdogService : Service() {
             }
 
             startActivity(intent)
+            lastLaunchTimeMs = System.currentTimeMillis()
             Log.i(TAG, "Restarted web-kiosk${if (playerUrl != null) " with URL: $playerUrl" else ""}")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to restart web-kiosk: ${e.message}")
