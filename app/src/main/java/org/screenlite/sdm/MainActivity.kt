@@ -43,6 +43,10 @@ class MainActivity : ComponentActivity() {
 
         applyConfig()
 
+        // Start watchdog — monitors web-kiosk from the SDM process and restarts
+        // it if the kiosk process dies (crash, OOM kill, etc.)
+        WatchdogService.start(this)
+
         val updater = AutoUpdater(this)
         lifecycleScope.launch {
             updater.updateIfNeeded()
